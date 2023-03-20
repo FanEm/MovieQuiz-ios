@@ -15,7 +15,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     private var currentQuestion: QuizQuestion?
     private var statisticService: StatisticService?
 
-    private struct Constants {
+    private enum Constants {
         static let imageBorderWidth: CGFloat = 8
         static let questionsAmount = 10
     }
@@ -89,7 +89,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
                 self.questionFactory?.requestNextQuestion()
             }
         )
-        ResultAlertPresenter(model: alertModel, controller: self).show()
+        ResultAlertPresenter().show(model: alertModel, from: self)
     }
     
     private func showAnswerResult(isCorrect: Bool) {
