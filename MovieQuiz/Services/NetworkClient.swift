@@ -8,6 +8,7 @@ import Foundation
 struct NetworkClient {
     private enum NetworkError: Error {
         case codeError
+        case emptyData
     }
 
     func fetch(url: URL, handler: @escaping (Result<Data, Error>) -> Void) {
@@ -25,7 +26,11 @@ struct NetworkClient {
                 return
             }
 
-            guard let data else { return }
+            guard let data else {
+                handler(.failure(NetworkError.emptyData))
+                return
+            }
+
             handler(.success(data))
         }
 

@@ -88,13 +88,14 @@ final class QuestionFactory: QuestionFactoryProtocol {
             do {
                 imageData = try Data(contentsOf: movie.resizedImageURL)
             } catch {
-                print("Failed to load image")
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    self.delegate?.didFailToLoadImage(with: error)
+                }
+                return
             }
 
-            let rating = Float(movie.rating) ?? 0
-            let questionRating = self.calculateRatingForQuestion(rating)
-            let text =  "Рейтинг этого фильма больше чем \(Int(questionRating))?"
-            let correctAnswer = rating > questionRating
+            let (text, correctAnswer) = self.generateQuestionAndCorrectAnswer(movie.rating)
 
             let question = QuizQuestion(
                 image: imageData,
@@ -109,11 +110,20 @@ final class QuestionFactory: QuestionFactoryProtocol {
         }
     }
 
-    private func calculateRatingForQuestion(_ filmRating: Float) -> Float {
+    private func generateQuestionAndCorrectAnswer(_ filmRating: String) -> (String, Bool) {
+        let filmRating = Float(filmRating) ?? 0
         let roundedRating = filmRating.rounded(.down)
-        return [
+        let isMore = Bool.random()
+
+        var rating = [
             max(roundedRating - 1, 0),
             min(roundedRating + 1, 9)
         ].randomElement() ?? roundedRating
+        if rating == filmRating { rating -= 1 }
+
+        return (
+            text: "Рейтинг этого фильма \(isMore ? "больше" : "меньше") чем \(Int(rating))?",
+            correctAnswer: isMore ? filmRating > rating : filmRating < rating
+        )
     }
 }

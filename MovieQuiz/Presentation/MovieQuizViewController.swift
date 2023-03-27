@@ -61,6 +61,8 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     // MARK: - QuestionFactoryDelegate
     func didReceiveNextQuestion(question: QuizQuestion?) {
+        hideLoadingIndicator()
+
         guard let question else { return }
 
         currentQuestion = question
@@ -77,17 +79,21 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     }
 
     func didFailToLoadData(with error: Error) {
+        hideLoadingIndicator()
         showNetworkError(message: error.localizedDescription)
+    }
+    
+    func didFailToLoadImage(with error: Error) {
+        hideLoadingIndicator()
+        showLoadingImageError(message: error.localizedDescription)
     }
 
     // MARK: - Private functions
     private func showLoadingIndicator() {
-        activityIndicator.isHidden = false
         activityIndicator.startAnimating()
     }
 
     private func hideLoadingIndicator() {
-        activityIndicator.isHidden = true
         activityIndicator.stopAnimating()
     }
     
@@ -121,10 +127,22 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         )
         alertPresenter?.show(in: self, model: alertModel)
     }
+
+    private func showLoadingImageError(message: String) {
+        let alertModel = AlertModel(
+            title: "Не удалось загрузить постер",
+            message: message,
+            buttonText: "Попробовать еще раз",
+            completion: { [weak self] in
+                guard let self else { return }
+                self.showLoadingIndicator()
+                self.questionFactory?.requestNextQuestion()
+            }
+        )
+        alertPresenter?.show(in: self, model: alertModel)
+    }
     
     private func showNetworkError(message: String) {
-        hideLoadingIndicator()
-
         let alertModel = AlertModel(
             title: "Ошибка",
             message: message,
@@ -186,6 +204,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             show(quiz: resultViewModel)
         } else {
             currentQuestionIndex += 1
+            showLoadingIndicator()
             questionFactory?.requestNextQuestion()
         }
     }
