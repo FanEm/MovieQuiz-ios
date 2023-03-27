@@ -7,22 +7,15 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     @IBOutlet private var textLabel: UILabel!
     @IBOutlet private var noButton: UIButton!
     @IBOutlet private var yesButton: UIButton!
-
+    @IBOutlet private var activityIndicator: UIActivityIndicatorView!
+    
     private var currentQuestionIndex: Int = 0
     private var correctAnswerCount: Int = 0
 
     private var questionFactory: QuestionFactoryProtocol?
     private var currentQuestion: QuizQuestion?
     private var statisticService: StatisticService?
-
-    private enum Constants {
-        static let imageBorderWidth: CGFloat = 8
-        static let questionsAmount = 10
-    }
-
-    override var preferredStatusBarStyle: UIStatusBarStyle {
-        return .lightContent
-    }
+    private var alertPresenter: AlertPresenter?
 
     private var resultMessage: String {
         let result = "Ваш результат: \(correctAnswerCount)/\(Constants.questionsAmount)"
@@ -36,12 +29,25 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         return "\(result)\n\(gamesCount)\n\(record)\n\(totalAccuracy)"
     }
 
+    private enum Constants {
+        static let imageBorderWidth: CGFloat = 8
+        static let questionsAmount = 10
+    }
+
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        return .lightContent
+    }
+
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        questionFactory = QuestionFactory(delegate: self)
-        questionFactory?.requestNextQuestion()
+        questionFactory = QuestionFactory(
+            moviesLoader: MoviesLoader(),
+            delegate: self
+        )
         statisticService = StatisticServiceImplementation()
+        alertPresenter = AlertPresenter()
+        loadData()
     }
 
     // MARK: - Actions
@@ -55,6 +61,8 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     // MARK: - QuestionFactoryDelegate
     func didReceiveNextQuestion(question: QuizQuestion?) {
+        hideLoadingIndicator()
+
         guard let question else { return }
 
         currentQuestion = question
@@ -65,7 +73,35 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         }
     }
 
+    func didLoadDataFromServer() {
+        hideLoadingIndicator()
+        questionFactory?.requestNextQuestion()
+    }
+
+    func didFailToLoadData(with error: Error) {
+        hideLoadingIndicator()
+        showNetworkError(message: error.localizedDescription)
+    }
+    
+    func didFailToLoadImage(with error: Error) {
+        hideLoadingIndicator()
+        showLoadingImageError(message: error.localizedDescription)
+    }
+
     // MARK: - Private functions
+    private func showLoadingIndicator() {
+        activityIndicator.startAnimating()
+    }
+
+    private func hideLoadingIndicator() {
+        activityIndicator.stopAnimating()
+    }
+    
+    private func loadData() {
+        showLoadingIndicator()
+        questionFactory?.loadData()
+    }
+
     private func buttonClicked(givenAnswer: Bool) {
         guard let currentQuestion else { return }
         showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
@@ -86,10 +122,39 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
                 guard let self else { return }
                 self.currentQuestionIndex = 0
                 self.correctAnswerCount = 0
+                self.loadData()
+            }
+        )
+        alertPresenter?.show(in: self, model: alertModel)
+    }
+
+    private func showLoadingImageError(message: String) {
+        let alertModel = AlertModel(
+            title: "Не удалось загрузить постер",
+            message: message,
+            buttonText: "Попробовать еще раз",
+            completion: { [weak self] in
+                guard let self else { return }
+                self.showLoadingIndicator()
                 self.questionFactory?.requestNextQuestion()
             }
         )
-        ResultAlertPresenter().show(model: alertModel, from: self)
+        alertPresenter?.show(in: self, model: alertModel)
+    }
+    
+    private func showNetworkError(message: String) {
+        let alertModel = AlertModel(
+            title: "Ошибка",
+            message: message,
+            buttonText: "Попробовать еще раз",
+            completion: { [weak self] in
+                guard let self else { return }
+                self.currentQuestionIndex = 0
+                self.correctAnswerCount = 0
+                self.loadData()
+            }
+        )
+        alertPresenter?.show(in: self, model: alertModel)
     }
     
     private func showAnswerResult(isCorrect: Bool) {
@@ -139,14 +204,16 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             show(quiz: resultViewModel)
         } else {
             currentQuestionIndex += 1
+            showLoadingIndicator()
             questionFactory?.requestNextQuestion()
         }
     }
 
     private func convert(model: QuizQuestion) -> QuizStepViewModel {
-      return QuizStepViewModel(
-        image: UIImage(named: model.image) ?? UIImage(),
-        question: model.text,
-        questionNumber: "\(currentQuestionIndex + 1)/\(Constants.questionsAmount)")
+        return QuizStepViewModel(
+            image: UIImage(data: model.image) ?? UIImage(),
+            question: model.text,
+            questionNumber: "\(currentQuestionIndex + 1)/\(Constants.questionsAmount)"
+        )
     }
 }
