@@ -6,6 +6,7 @@
 import XCTest
 @testable import MovieQuiz
 
+// MARK: - MovieQuizViewControllerMock
 final class MovieQuizViewControllerMock: MovieQuizViewControllerProtocol {
     func show(quiz step: QuizStepViewModel) {}
     func show(quiz result: QuizResultsViewModel) {}
@@ -17,6 +18,7 @@ final class MovieQuizViewControllerMock: MovieQuizViewControllerProtocol {
     func showNetworkError(message: String) {}
 }
 
+// MARK: - MovieQuizPresenterTests
 final class MovieQuizPresenterTests: XCTestCase {
     func testPresenterConvertModel() throws {
         let viewControllerMock = MovieQuizViewControllerMock()

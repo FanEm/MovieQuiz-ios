@@ -5,6 +5,7 @@
 
 import Foundation
 
+// MARK: - StatisticService
 protocol StatisticService {
     func store(correct count: Int, total amount: Int)
     var totalAccuracy: Double { get }
@@ -12,6 +13,7 @@ protocol StatisticService {
     var bestGame: GameRecord { get }
 }
 
+// MARK: - StatisticServiceImplementation
 final class StatisticServiceImplementation: StatisticService {
     private let userDefaults = UserDefaults.standard
 
@@ -63,6 +65,7 @@ final class StatisticServiceImplementation: StatisticService {
         }
     }
     
+    // MARK: - Private variables
     private var correctAnswers: Int {
         get {
             userDefaults.integer(forKey: Keys.correct.rawValue)

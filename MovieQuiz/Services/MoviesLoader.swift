@@ -5,10 +5,12 @@
 
 import Foundation
 
+// MARK: - MoviesLoading
 protocol MoviesLoading {
     func loadMovies(handler: @escaping (Result<MostPopularMovies, Error>) -> Void)
 }
 
+// MARK: - MoviesLoader
 struct MoviesLoader: MoviesLoading {
     private let networkClient: NetworkRouting
     private let apiKey = "k_6vzv69fy" // TODO: не хранить в коде

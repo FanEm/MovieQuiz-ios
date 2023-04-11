@@ -5,6 +5,7 @@
 
 import UIKit
 
+// MARK: - MovieQuizPresenter
 final class MovieQuizPresenter {
     private var questionFactory: QuestionFactoryProtocol?
     private weak var viewController: MovieQuizViewControllerProtocol?
@@ -118,7 +119,7 @@ final class MovieQuizPresenter {
     }
 }
 
-// MARK: - QuestionFactoryDelegate
+// MARK: - MovieQuizPresenter+QuestionFactoryDelegate
 extension MovieQuizPresenter: QuestionFactoryDelegate {
     func didReceiveNextQuestion(question: QuizQuestion?) {
         viewController?.hideLoadingIndicator()
